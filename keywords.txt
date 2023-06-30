@@ -1,0 +1,8 @@
+ImageObject   KEYWORD1
+getWidth   KEYWORD2
+getHeight    KEYWORD2
+getPixelCount    KEYWORD2
+setPixelStructValues KEYWORD2
+getPixelValue KEYWORD2
+setPixelValue KEYWORD2
+
