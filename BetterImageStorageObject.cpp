@@ -9,14 +9,73 @@
 
 
 
-ImageObject::ImageObject(bool grayscaleFlag, bool alphaChannelFlag, int w, int h, uint8_t inputValue0, uint8_t inputValue1, uint8_t inputValue2, uint8_t inputValue3)
+BetterImageStorageObject::BetterImageStorageObject(bool grayscaleFlag, bool alphaChannelFlag)
 {
   this->grayscaleFlag = grayscaleFlag;
   this->alphaChannelFlag = alphaChannelFlag;
+  this->_imageModeFlags = 0B00000000;
+  if (grayscaleFlag){
+    this->_imageModeFlags |= BImgSObj_IFlag_Grayscale;
+  }
+  if (alphaChannelFlag){
+    this->_imageModeFlags |= BImgSObj_IFlag_AlphaChannel;
+  }
+}
+
+bool BetterImageStorageObject::begin(uint32_t w, uint32_t h, uint8_t inputValue0)
+{
+  return begin_Base(w, h, inputValue0, -1, -1, -1);
+}
+bool BetterImageStorageObject::begin(uint32_t w, uint32_t h, uint8_t inputValue0, uint8_t inputValue1)
+{
+  return begin_Base(w, h, inputValue0, inputValue1, -1, -1);
+}
+bool BetterImageStorageObject::begin(uint32_t w, uint32_t h, uint8_t inputValue0, uint8_t inputValue1, uint8_t inputValue2)
+{
+  return begin_Base(w, h, inputValue0, inputValue1, inputValue2, -1);
+}
+bool BetterImageStorageObject::begin(uint32_t w, uint32_t h, uint8_t inputValue0, uint8_t inputValue1, uint8_t inputValue2, uint8_t inputValue3)
+{
+  return begin_Base(w, h, inputValue0, inputValue1, inputValue2, inputValue3);
+}
+
+bool BetterImageStorageObject::begin_Base(uint32_t w, uint32_t h, uint8_t inputValue0 = -1, uint8_t inputValue1 = -1, uint8_t inputValue2 = -1, uint8_t inputValue3 = -1)
+{
   uint8_t redBitLength = 0;
   uint8_t greenBitLength = 0;
   uint8_t blueBitLength = 0;
   uint8_t alphaBitLength = 0;
+  uint8_t imageModeFlags;
+  
+  switch( imageModeFlags )
+  {
+    case BImgSObj_IFlag_Grayscale    : {
+      //Use inputValue0
+      redBitLength = inputValue0;
+      greenBitLength = inputValue0;
+      blueBitLength = inputValue0;
+      };break;
+    case BImgSObj_IFlag_AlphaChannel : {
+      //Use inputValue0, inputValue1, inputValue2, inputValue3
+      redBitLength = inputValue0;
+      greenBitLength = inputValue1;
+      blueBitLength = inputValue2;
+      alphaBitLength = inputValue3;
+      };break;
+    case BImgSObj_IFlag_Grayscale|BImgSObj_IFlag_AlphaChannel  : {
+      //Use inputValue0, inputValue1
+      redBitLength = inputValue0;
+      greenBitLength = inputValue0;
+      blueBitLength = inputValue0;
+      alphaBitLength = inputValue1;
+      };break;
+    default: {
+      //Use inputValue0, inputValue1, inputValue2
+      redBitLength = inputValue0;
+      greenBitLength = inputValue1;
+      blueBitLength = inputValue2;
+      };break;
+  }
   
   if (grayscaleFlag){
     if (alphaChannelFlag){
@@ -46,36 +105,39 @@ ImageObject::ImageObject(bool grayscaleFlag, bool alphaChannelFlag, int w, int h
     }
   }
   createImageFunc(w, h, redBitLength, greenBitLength, blueBitLength, alphaBitLength);
+  return true;//Success!
 }
 
 
-void ImageObject::createImageFunc(int w, int h, int firstBitLength, int greenBitLength, int blueBitLength, int alphaBitLength)
+void BetterImageStorageObject::createImageFunc(uint32_t w, uint32_t h, uint8_t firstBitLength, uint8_t secondBitLength, uint8_t blueBitLength, uint8_t alphaBitLength)
 {
   this->width = w;
   this->height = h;
   this->_alphaBitOffset = 0;
   if (grayscaleFlag){
     PixelArray.pixelBitLength = firstBitLength;
-    PixelArray.redBitLength = firstBitLength;
-    PixelArray.greenBitLength = firstBitLength;
-    PixelArray.blueBitLength = firstBitLength;
+    
+    ChannelBitLength.set_redChannel( firstBitLength );
+    ChannelBitLength.set_greenChannel( firstBitLength );
+    ChannelBitLength.set_blueChannel( firstBitLength );
     this->_redBitOffset = 0;
     this->_greenBitOffset = 0;
     this->_blueBitOffset = 0;
   }else{
-    PixelArray.pixelBitLength = firstBitLength+greenBitLength+blueBitLength;
+    PixelArray.pixelBitLength = firstBitLength+secondBitLength+blueBitLength;
     this->_redBitOffset = 0;
-    PixelArray.redBitLength = firstBitLength;
+    ChannelBitLength.set_redChannel( firstBitLength );
     
-    this->_greenBitOffset = _redBitOffset + PixelArray.redBitLength;
-    PixelArray.greenBitLength = greenBitLength;
+    this->_greenBitOffset = _redBitOffset + ChannelBitLength.get_redChannel();
+    ChannelBitLength.set_greenChannel( secondBitLength );
     
-    this->_blueBitOffset = _greenBitOffset + PixelArray.greenBitLength;
-    PixelArray.blueBitLength = blueBitLength;
+    
+    this->_blueBitOffset = _greenBitOffset + ChannelBitLength.get_greenChannel();
+    ChannelBitLength.set_blueChannel( blueBitLength );
 
     if (alphaChannelFlag){
-      this->_alphaBitOffset = _blueBitOffset + PixelArray.blueBitLength;
-      PixelArray.alphaBitLength = alphaBitLength;
+      this->_alphaBitOffset = _blueBitOffset + ChannelBitLength.get_blueChannel();
+      ChannelBitLength.set_alphaChannel( alphaBitLength );
     }
   }
   if (alphaChannelFlag){
@@ -85,18 +147,18 @@ void ImageObject::createImageFunc(int w, int h, int firstBitLength, int greenBit
   
   uint64_t dataBitLength = ((width*height)*PixelArray.pixelBitLength);
   PixelArray.dataByteLength = (dataBitLength - dataBitLength%8)>>3 + (dataBitLength%8 != 0);
-  setPixelMask(&PixelsMask);
-  PixelArray.data = (unsigned char*)calloc(PixelArray.dataByteLength, sizeof(unsigned char));
+  setPixelMask(&PixelMask);
+  PixelArray.data = (uint8_t*)calloc(PixelArray.dataByteLength, sizeof(uint8_t));
 }
 
 
 
-uint32_t ImageObject::bitSelect_i32o32(uint32_t input, unsigned int offset, unsigned int length)
+uint32_t BetterImageStorageObject::bitSelect_i32o32(uint32_t input, uint32_t offset, uint32_t length)
 {
   //offset = 4
   //length = 12
-  const unsigned char inputLength = 32;
-  unsigned char shiftLeftCount = inputLength-(offset+length);
+  const uint8_t inputLength = 32;
+  uint8_t shiftLeftCount = inputLength-(offset+length);
   uint32_t bitSelectMask = ~(0B11111111111111111111111111111111<<length);
   
   //"|" Selected bits
@@ -110,7 +172,7 @@ uint32_t ImageObject::bitSelect_i32o32(uint32_t input, unsigned int offset, unsi
   return (input>>shiftLeftCount) & bitSelectMask;
 }
 
-uint64_t ImageObject::arraybitSelect_o64(uint8_t inputArray[], unsigned int bitIndex)
+uint64_t BetterImageStorageObject::arraybitSelect_o64(uint8_t inputArray[], uint32_t bitIndex)
 {
   //bitIndex = 10
   //bitGrabCount = 64
@@ -122,9 +184,9 @@ uint64_t ImageObject::arraybitSelect_o64(uint8_t inputArray[], unsigned int bitI
   //output
   //|||||||| |||||||| |||||||| |||||||| |||||||| |||||||| |||||||| ||||||||
   //11111111 00000000 11111111 00000000 11111111 00000000 11111111 00000000
-  byte endMask = (0B11111111)<<(8-bitIndex%8);
-  byte startMask = ~(endMask);
-  unsigned int byteIndex = ((bitIndex-(bitIndex%8))>>3);
+  uint8_t endMask = (0B11111111)<<(8-bitIndex%8);
+  uint8_t startMask = ~(endMask);
+  uint32_t byteIndex = ((bitIndex-(bitIndex%8))>>3);
   uint64_t output;
   uint8_t outputList[8];
   outputList[0] = (inputArray[ (byteIndex+0) ]&startMask) | (inputArray[ (byteIndex+1) ]&endMask);
@@ -139,7 +201,7 @@ uint64_t ImageObject::arraybitSelect_o64(uint8_t inputArray[], unsigned int bitI
   return output;
 }
 
-uint32_t ImageObject::arraybitSelect_o32(uint8_t inputArray[], unsigned int bitIndex)
+uint32_t BetterImageStorageObject::arraybitSelect_o32(uint8_t inputArray[], uint32_t bitIndex)
 {
   //bitIndex = 10
   //bitGrabCount = 632
@@ -148,9 +210,9 @@ uint32_t ImageObject::arraybitSelect_o32(uint8_t inputArray[], unsigned int bitI
   //endMask = 0B11000000;
   //xxxxxxxx xx|||||| |||||||| |||||||| |||||||| |||||||| |||||||| |||||||| |||||||| ||xxxxxx
   //11000000 00111111 11000000 00111111 11000000 00111111 11000000 00111111 11000000 00111111
-  byte endMask = (0B11111111)<<(8-bitIndex%8);
-  byte startMask = ~(endMask);
-  unsigned int byteIndex = ((bitIndex-(bitIndex%8))>>3);
+  uint8_t endMask = (0B11111111)<<(8-bitIndex%8);
+  uint8_t startMask = ~(endMask);
+  uint32_t byteIndex = ((bitIndex-(bitIndex%8))>>3);
   uint32_t output;
   uint8_t outputList[4];
   outputList[0] = (inputArray[ (byteIndex+0) ]&startMask) | (inputArray[ (byteIndex+1) ]&endMask);
@@ -161,7 +223,7 @@ uint32_t ImageObject::arraybitSelect_o32(uint8_t inputArray[], unsigned int bitI
   return output;
 }
 
-void ImageObject::uint32_convert_to_4xuint8Array(uint8_t inputArray[], uint32_t input)
+void BetterImageStorageObject::uint32_convert_to_4xuint8Array(uint8_t inputArray[], uint32_t input)
 {
   //inputArray must be atleast 4 items
   inputArray[0] = (input>>(24));
@@ -171,9 +233,9 @@ void ImageObject::uint32_convert_to_4xuint8Array(uint8_t inputArray[], uint32_t 
 }
 
 
-void ImageObject::byteArray_bitWrite_i32(uint8_t inputArray[], uint32_t input, uint64_t bitoffset, uint8_t inputbitlength)
+void BetterImageStorageObject::byteArray_bitWrite_i32(uint8_t inputArray[], uint32_t input, uint64_t bitoffset, uint8_t inputbitlength)
 {
-  unsigned int byteIndex = ((bitoffset-(bitoffset%8))>>3);
+  uint32_t byteIndex = ((bitoffset-(bitoffset%8))>>3);
   uint8_t bufferBitOffset = (bitoffset%8);
   uint8_t bufferBitStartMask = ~(0B11111111 << bufferBitOffset);
   uint8_t bufferBitEndMask = (0B11111111 << bufferBitOffset);
@@ -233,43 +295,43 @@ void ImageObject::byteArray_bitWrite_i32(uint8_t inputArray[], uint32_t input, u
 }
 
 
-uint8_t ImageObject::getWidth()
+uint8_t BetterImageStorageObject::getWidth()
 {
   return width;
 }
-uint8_t ImageObject::getHeight()
+uint8_t BetterImageStorageObject::getHeight()
 {
   return height;
 }
 
-unsigned short int ImageObject::getPixelCount()
+uint16_t BetterImageStorageObject::getPixelCount()
 {
   return (width * height);
 }
 
-PixelStruct ImageObject::getPixelValue(int xPos, int yPos)
+PixelStruct BetterImageStorageObject::getPixelValue(uint32_t xPos, uint32_t yPos)
 {
   PixelStruct pixel;
-  unsigned int pixelBitindex = (xPos + yPos*width)*(PixelArray.pixelBitLength);
-  unsigned int pixelindex = pixelBitindex/8;
-  unsigned int pixelData = arraybitSelect_o32(PixelArray.data, pixelBitindex);
+  uint32_t pixelBitindex = (xPos + yPos*width)*(PixelArray.pixelBitLength);
+  uint32_t pixelindex = pixelBitindex/8;
+  uint32_t pixelData = arraybitSelect_o32(PixelArray.data, pixelBitindex);
   pixelData = pixelData & (~(0B11111111111111111111111111111111 << PixelArray.pixelBitLength));
-  pixel.red = bitSelect_i32o32(pixelData, _redBitOffset, PixelArray.redBitLength);
-  pixel.green = bitSelect_i32o32(pixelData, _greenBitOffset, PixelArray.greenBitLength);
-  pixel.blue = bitSelect_i32o32(pixelData, _blueBitOffset, PixelArray.blueBitLength);
-  pixel.alpha = bitSelect_i32o32(pixelData, _alphaBitOffset, PixelArray.alphaBitLength);
+  pixel.red = bitSelect_i32o32(pixelData, _redBitOffset, ChannelBitLength.get_redChannel());
+  pixel.green = bitSelect_i32o32(pixelData, _greenBitOffset, ChannelBitLength.get_greenChannel());
+  pixel.blue = bitSelect_i32o32(pixelData, _blueBitOffset, ChannelBitLength.get_blueChannel());
+  pixel.alpha = bitSelect_i32o32(pixelData, _alphaBitOffset, ChannelBitLength.get_alphaChannel());
   return pixel;
 }
 
-void ImageObject::setPixelValue(int xPos, int yPos, PixelStruct pixel)
+void BetterImageStorageObject::setPixelValue(uint32_t xPos, uint32_t yPos, PixelStruct pixel)
 {
-  unsigned long int pixelBitindex = (xPos + yPos*width)*(PixelArray.pixelBitLength);
-  unsigned int pixelValue = ConvertPixelStruct_to_Binary(pixel);
+  uint64_t pixelBitindex = (xPos + yPos*width)*(PixelArray.pixelBitLength);
+  uint32_t pixelValue = ConvertPixelStruct_to_Binary(pixel);
   byteArray_bitWrite_i32(PixelArray.data, pixelValue, pixelBitindex, PixelArray.pixelBitLength);
 }
 
 
-PixelStruct ImageObject::setPixelStructValues_Base(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+PixelStruct BetterImageStorageObject::setPixelStructValues_Base(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
   PixelStruct pixel;
   if (grayscaleFlag){
@@ -289,29 +351,29 @@ PixelStruct ImageObject::setPixelStructValues_Base(unsigned char r, unsigned cha
   return applyPixelMask( pixel );
 }
 
-PixelStruct ImageObject::setPixelStructValues(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+PixelStruct BetterImageStorageObject::setPixelStructValues(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
   return setPixelStructValues_Base(r, g, b, a);
 }
 
-PixelStruct ImageObject::setPixelStructValues(unsigned char w, unsigned char a)
+PixelStruct BetterImageStorageObject::setPixelStructValues(uint8_t w, uint8_t a)
 {
   return setPixelStructValues_Base(w, w, w, a);
 }
 
 
 
-PixelStruct ImageObject::filterPixelValues(PixelStruct pixelIn, uint8_t rBitLength, uint8_t gBitLength, uint8_t bBitLength, uint8_t aBitLength)
+PixelStruct BetterImageStorageObject::filterPixelValues(PixelStruct pixelIn, uint8_t rBitLength, uint8_t gBitLength, uint8_t bBitLength, uint8_t aBitLength)
 {
   PixelStruct pixelOut;
   pixelOut.red = pixelIn.red;
   pixelOut.green = pixelIn.green;
   pixelOut.blue = pixelIn.blue;
   pixelOut.alpha = pixelIn.alpha;
-  byte rMask = ~(0B11111111<<rBitLength);
-  byte gMask = ~(0B11111111<<gBitLength);
-  byte bMask = ~(0B11111111<<bBitLength);
-  byte aMask = ~(0B11111111<<aBitLength);
+  uint8_t rMask = ~(0B11111111<<rBitLength);
+  uint8_t gMask = ~(0B11111111<<gBitLength);
+  uint8_t bMask = ~(0B11111111<<bBitLength);
+  uint8_t aMask = ~(0B11111111<<aBitLength);
   pixelOut.red &= rMask;
   pixelOut.green &= gMask;
   pixelOut.blue &= bMask;
@@ -320,25 +382,25 @@ PixelStruct ImageObject::filterPixelValues(PixelStruct pixelIn, uint8_t rBitLeng
 }
 
 
-PixelStruct ImageObject::applyPixelMask(PixelStruct pixelIn)
+PixelStruct BetterImageStorageObject::applyPixelMask(PixelStruct pixelIn)
 {
   PixelStruct pixelOut;
-  pixelOut.red = pixelIn.red & PixelsMask.redMask;
-  pixelOut.green = pixelIn.green & PixelsMask.greenMask;
-  pixelOut.blue = pixelIn.blue & PixelsMask.blueMask;
-  pixelOut.alpha = pixelIn.alpha & PixelsMask.alphaMask;
+  pixelOut.red = pixelIn.red & PixelMask.redMask;
+  pixelOut.green = pixelIn.green & PixelMask.greenMask;
+  pixelOut.blue = pixelIn.blue & PixelMask.blueMask;
+  pixelOut.alpha = pixelIn.alpha & PixelMask.alphaMask;
   return pixelOut;
 }
 
 
-uint32_t ImageObject::ConvertPixelStruct_to_Binary(PixelStruct pixel)
+uint32_t BetterImageStorageObject::ConvertPixelStruct_to_Binary(PixelStruct pixel)
 {
   uint32_t pixelBinaryOut = 0B00000000000000000000000000000000;
   //If color bit lengths are less then 8 then the bits will be LSB
   //Example rBitLength = 5, gBitLength = 6, bBitLength = 5, aBitLength = 1
   //0Bxxxxxxxx xxxxxxxr rrrrgggg ggbbbbba
-  PixelStruct pixelTemp = filterPixelValues(pixel, PixelArray.redBitLength, PixelArray.greenBitLength, PixelArray.blueBitLength, PixelArray.alphaBitLength);
-  pixelBinaryOut = pixelTemp.red<<(PixelArray.greenBitLength+PixelArray.blueBitLength+PixelArray.alphaBitLength) | pixelTemp.green<<(PixelArray.blueBitLength+PixelArray.alphaBitLength) | pixelTemp.blue<<(PixelArray.alphaBitLength) | pixelTemp.alpha;
+  PixelStruct pixelTemp = filterPixelValues(pixel, ChannelBitLength.get_redChannel(), ChannelBitLength.get_greenChannel(), ChannelBitLength.get_blueChannel(), ChannelBitLength.get_alphaChannel());
+  pixelBinaryOut = pixelTemp.red<<(ChannelBitLength.get_greenChannel()+ChannelBitLength.get_blueChannel()+ChannelBitLength.get_alphaChannel()) | pixelTemp.green<<(ChannelBitLength.get_blueChannel()+ChannelBitLength.get_alphaChannel()) | pixelTemp.blue<<(ChannelBitLength.get_alphaChannel()) | pixelTemp.alpha;
   return pixelBinaryOut;
 }
 
@@ -346,20 +408,20 @@ uint32_t ImageObject::ConvertPixelStruct_to_Binary(PixelStruct pixel)
 
 
 
-void ImageObject::setPixelMask(PixelMaskStruct *pixelMaskInput){
-  pixelMaskInput->redMask = ~(0B11111111 << PixelArray.redBitLength);
-  pixelMaskInput->greenMask = ~(0B11111111 << PixelArray.greenBitLength);
-  pixelMaskInput->blueMask = ~(0B11111111 << PixelArray.blueBitLength);
+void BetterImageStorageObject::setPixelMask(PixelMaskStruct *pixelMaskInput){
+  pixelMaskInput->redMask = ~(0B11111111 << ChannelBitLength.get_redChannel());
+  pixelMaskInput->greenMask = ~(0B11111111 << ChannelBitLength.get_greenChannel());
+  pixelMaskInput->blueMask = ~(0B11111111 << ChannelBitLength.get_blueChannel());
   if (alphaChannelFlag){
-    pixelMaskInput->alphaMask = ~(0B11111111 << PixelArray.alphaBitLength);
+    pixelMaskInput->alphaMask = ~(0B11111111 << ChannelBitLength.get_alphaChannel());
   }else{
     pixelMaskInput->alphaMask = 0B11111111;//solid
   }
 }
 
-unsigned char ImageObject::mean3input8Bit(unsigned char i0, unsigned char i1, unsigned char i2)
+uint8_t BetterImageStorageObject::mean3input8Bit(uint8_t i0, uint8_t i1, uint8_t i2)
 {
-  unsigned int sum = (i0+i1+i2);
+  uint32_t sum = (i0+i1+i2);
   return (unsigned char)((sum)<<3);
 }
 
@@ -384,31 +446,31 @@ using namespace std;
 class Shape {
    public:
       // pure virtual function providing interface framework.
-      virtual int getArea() = 0;
-      void setWidth(int w) {
+      virtual uint32_t getArea() = 0;
+      void setWidth(uint32_t w) {
          width = w;
       }
    
-      void setHeight(int h) {
+      void setHeight(uint32_t h) {
          height = h;
       }
    
    protected:
-      int width;
-      int height;
+      uint32_t width;
+      uint32_t height;
 };
  
 // Derived classes
 class Rectangle: public Shape {
    public:
-      int getArea() { 
+      uint32_t getArea() { 
          return (width * height); 
       }
 };
 
 class Triangle: public Shape {
    public:
-      int getArea() { 
+      uint32_t getArea() { 
          return (width * height)/2; 
       }
 };

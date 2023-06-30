@@ -1,4 +1,32 @@
-ImageObject   KEYWORD1
+#######################################
+# Syntax Coloring Map
+#######################################
+#Helpful -> "https://forum.arduino.cc/t/keywords-in-arduino-ide/887238"
+#FUNCTIONS COLOR 			#D35400 - ORANGE			KEYWORD1
+#FUNCTIONS COLOR			#D35400 - ORANGE			KEYWORD2
+#STRUCTURE COLORS 			#728E00 - GREEN			KEYWORD3
+#CONSTANTS COLOR 				#00979C - BLUE				LITERAL1
+#VARIABLES COLOR 				#00979C - BLUE				LITERAL2
+
+#ERROR COLOR					#A61717 - RED
+#COMMENTS // COLOR			#95A5A6 - LIGHT GREY
+#COMMENTS /**/ COLOR		#434F54	- DARK GREY
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+#######################################
+# STRUCTURE (KEYWORD3)
+#######################################
+PixelArrayStruct	KEYWORD3
+PixelMaskStruct	KEYWORD3
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+BetterImageStorageObject	KEYWORD2
+begin	KEYWORD2
 getWidth   KEYWORD2
 getHeight    KEYWORD2
 getPixelCount    KEYWORD2
@@ -6,3 +34,23 @@ setPixelStructValues KEYWORD2
 getPixelValue KEYWORD2
 setPixelValue KEYWORD2
 
+
+######################################
+# VARIABLES (LITERAL2)
+#######################################
+grayscaleFlag	LITERAL2
+alphaChannelFlag	LITERAL2
+PixelMask	LITERAL2
+PixelArray	LITERAL2
+width	LITERAL2
+height	LITERAL2
+_redBitOffset	LITERAL2
+_greenBitOffset	LITERAL2
+_blueBitOffset	LITERAL2
+_alphaBitOffset	LITERAL2
+
+######################################
+# Constants (LITERAL1)
+#######################################
+ModeGrayScaleFlag	LITERAL1
+ModeAlphaChannelFlag	LITERAL1
