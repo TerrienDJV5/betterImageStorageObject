@@ -71,10 +71,10 @@ class ImageObject {
     unsigned int width;
     unsigned int height;
     //MSB -> LSB
-    unsigned char redBitOffset;
-    unsigned char greenBitOffset;
-    unsigned char blueBitOffset;
-    unsigned char alphaBitOffset;
+    unsigned char _redBitOffset;
+    unsigned char _greenBitOffset;
+    unsigned char _blueBitOffset;
+    unsigned char _alphaBitOffset;
 };
 
 

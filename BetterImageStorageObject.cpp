@@ -53,27 +53,28 @@ void ImageObject::createImageFunc(int w, int h, int firstBitLength, int greenBit
 {
   this->width = w;
   this->height = h;
+  this->_alphaBitOffset = 0;
   if (grayscaleFlag){
     PixelArray.pixelBitLength = firstBitLength;
     PixelArray.redBitLength = firstBitLength;
     PixelArray.greenBitLength = firstBitLength;
     PixelArray.blueBitLength = firstBitLength;
-    PixelArray.redBitOffset = 0;
-    PixelArray.greenBitOffset = 0;
-    PixelArray.blueBitOffset = 0;
+    this->_redBitOffset = 0;
+    this->_greenBitOffset = 0;
+    this->_blueBitOffset = 0;
   }else{
     PixelArray.pixelBitLength = firstBitLength+greenBitLength+blueBitLength;
-    PixelArray.redBitOffset = 0;
+    this->_redBitOffset = 0;
     PixelArray.redBitLength = firstBitLength;
     
-    PixelArray.greenBitOffset = PixelArray.redBitOffset + PixelArray.redBitLength;
+    this->_greenBitOffset = _redBitOffset + PixelArray.redBitLength;
     PixelArray.greenBitLength = greenBitLength;
     
-    PixelArray.blueBitOffset = PixelArray.greenBitOffset + PixelArray.greenBitLength;
+    this->_blueBitOffset = _greenBitOffset + PixelArray.greenBitLength;
     PixelArray.blueBitLength = blueBitLength;
 
     if (alphaChannelFlag){
-      PixelArray.alphaBitOffset = PixelArray.blueBitOffset + PixelArray.blueBitLength;
+      this->_alphaBitOffset = _blueBitOffset + PixelArray.blueBitLength;
       PixelArray.alphaBitLength = alphaBitLength;
     }
   }
@@ -253,10 +254,10 @@ PixelStruct ImageObject::getPixelValue(int xPos, int yPos)
   unsigned int pixelindex = pixelBitindex/8;
   unsigned int pixelData = arraybitSelect_o32(PixelArray.data, pixelBitindex);
   pixelData = pixelData & (~(0B11111111111111111111111111111111 << PixelArray.pixelBitLength));
-  pixel.red = bitSelect_i32o32(pixelData, PixelArray.redBitOffset, PixelArray.redBitLength);
-  pixel.green = bitSelect_i32o32(pixelData, PixelArray.greenBitOffset, PixelArray.greenBitLength);
-  pixel.blue = bitSelect_i32o32(pixelData, PixelArray.blueBitOffset, PixelArray.blueBitLength);
-  pixel.alpha = bitSelect_i32o32(pixelData, PixelArray.alphaBitOffset, PixelArray.alphaBitLength);
+  pixel.red = bitSelect_i32o32(pixelData, _redBitOffset, PixelArray.redBitLength);
+  pixel.green = bitSelect_i32o32(pixelData, _greenBitOffset, PixelArray.greenBitLength);
+  pixel.blue = bitSelect_i32o32(pixelData, _blueBitOffset, PixelArray.blueBitLength);
+  pixel.alpha = bitSelect_i32o32(pixelData, _alphaBitOffset, PixelArray.alphaBitLength);
   return pixel;
 }
 
