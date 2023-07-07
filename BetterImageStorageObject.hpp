@@ -1,6 +1,6 @@
 //By Terrien-DJV5
 //BetterImageStorageObject.hpp
-//Version
+//Version CodeName Template
 //Date Created: jun 29 2023 6:48PM
 
 //https://cplusplus.com/reference/
@@ -99,14 +99,14 @@ class BitOffsetStorage : public RGBAChannelDataStorage{
 };
 
 
-#include <stdio.h>
 
-template< unsigned int MaxHeight, unsigned int MaxWidth, unsigned int MaxPixelBitWidth, unsigned int MaxChannelCount >
-class BetterImageStorageObject{
+
+
+
+
+
+class BetterImageStorageObjectBase{
   public:
-    //BetterImageStorageObject( bool grayscaleFlag, bool alphaChannelFlag );
-    bool config(char channelString[], int num, ...);
-    
     //imageStartModeType imagemode = grayscale|alphaChannel;
     bool begin(uint32_t w, uint32_t h, uint8_t inputValue0);//grayscale, No alpha
     bool begin(uint32_t w, uint32_t h, uint8_t inputValue0, uint8_t inputValue1);//grayscale, with alpha
@@ -145,9 +145,6 @@ class BetterImageStorageObject{
     uint8_t mean3input8Bit(uint8_t i0, uint8_t i1, uint8_t i2);
     
   private:
-    uint8_t _imageModeFlags;
-    bool grayscaleFlag;
-    bool alphaChannelFlag;
     PixelMaskStruct PixelMask;
     
     BitLengthStorage ChannelBitLength;
@@ -158,26 +155,21 @@ class BetterImageStorageObject{
     uint8_t _Data_PixelBitLength;//Max is 32
     uint64_t _Data_ByteLength;//ArrayLength
     
-    unsigned int _MaxHeight = MaxHeight;
-    unsigned int _MaxWidth = MaxWidth;
-    unsigned int _MaxPixelBitWidth = MaxPixelBitWidth;
-    unsigned int _MaxChannelCount = MaxChannelCount;
-    
     
   protected:
+    uint8_t _imageModeFlags;
+    bool grayscaleFlag;
+    bool alphaChannelFlag;
     uint32_t width;
     uint32_t height;
     
 };
 
+class BetterImageStorageObject : public BetterImageStorageObjectBase{
+  public:
+    BetterImageStorageObject( bool grayscaleFlag, bool alphaChannelFlag );
+};
 
-//#include "BetterImageStorageObject.cpp"
-
-
-
-
-
-/*
 BetterImageStorageObject::BetterImageStorageObject(bool grayscaleFlag, bool alphaChannelFlag)
 {
   this->grayscaleFlag = grayscaleFlag;
@@ -190,50 +182,111 @@ BetterImageStorageObject::BetterImageStorageObject(bool grayscaleFlag, bool alph
     this->_imageModeFlags |= BImgSObj_IFlag_AlphaChannel;
   }
 }
-*/
 
-bool BetterImageStorageObject::config(char channelString[], int num, ...) {
-  for (byte i = 0; i < sizeof(channelString) - 1; i++) {
-    Serial.print(i, DEC);
-    Serial.print(" = ");
-    Serial.write(channelString[i]);
-    Serial.println();
+
+
+
+
+
+
+#include <stdio.h>
+
+template< unsigned int MaxHeight, unsigned int MaxWidth, unsigned int MaxPixelBitWidth, unsigned int MaxChannelCount >
+class BetterImageStorageObjectTemplate : public BetterImageStorageObjectBase{
+public:
+  bool configChannelBitSize(int num, ...) {
+    int valu = num;
+    //Declare a va_list macro and initialize it with va_start
+    va_list argList;
+    va_start(argList, num);
+    for (byte index = 0; index < MaxChannelCount; index++) {
+      _channel_DataBitLength[ index ] = valu;
+      Serial.print("valu: ");
+      Serial.println(valu, DEC);
+      valu = va_arg(argList, int);
+    }
+    va_end(argList);
+    return true;
   }
-  int valu;
-  int total=0;
-  //Declare a va_list macro and initialize it with va_start
-  va_list argList;
-  va_start(argList, num);
-  for(; num; num--) {
-    valu = va_arg(argList, int);
-    Serial.print("valu: ");
-    Serial.print(valu, DEC);
-     total += valu;
-    Serial.print("  total: ");
-    Serial.println(total);
-  }  
-  va_end(argList);
-  return true;
-}
+  bool configChanName(const char channelString[]) {
+    for (byte i = 0; i < sizeof(channelString); i++) {
+      Serial.print(i, DEC);
+      Serial.print(" = ");
+      Serial.write(channelString[i]);
+      Serial.println();
+    }
+    uint8_t channel_R = 0;
+    uint8_t channel_G = 0;
+    uint8_t channel_B = 0;
+    uint8_t channel_A = 0;
+    
+    char *p_R, *p_G, *p_B, *p_A, *p_r, *p_g, *p_b, *p_a;
+    char *p_Rr = NULL, *p_Gg = NULL, *p_Bb = NULL, *p_Aa = NULL;
+    p_R = strstr(channelString, "R");p_G = strstr(channelString, "G");p_B = strstr(channelString, "B");p_A = strstr(channelString, "A");
+    p_r = strstr(channelString, "r");p_g = strstr(channelString, "g");p_b = strstr(channelString, "b");p_a = strstr(channelString, "a");
+    if (p_R and !p_r){p_Rr = p_R;}else if (!p_R and p_r){p_Rr = p_r;}else {p_Rr = NULL;};
+    if (p_G and !p_g){p_Gg = p_G;}else if (!p_G and p_g){p_Gg = p_g;}else {p_Gg = NULL;};
+    if (p_B and !p_b){p_Bb = p_B;}else if (!p_B and p_b){p_Bb = p_b;}else {p_Bb = NULL;};
+    if (p_A and !p_a){p_Aa = p_A;}else if (!p_A and p_a){p_Aa = p_a;}else {p_Aa = NULL;};
+    if (p_Rr and p_Gg and p_Bb and p_Aa){
+      this->baseIMGOBJ.begin(MaxHeight, MaxWidth, channel_R, channel_G, channel_B, channel_A);
+    }
+    return true;
+  }
+  uint16_t getWidth(){return width;}
+  uint16_t getHeight(){return height;}
+  uint32_t getPixelCount(){return (width * height);}
+  void printChannelBitLengths(Stream &serial){
+    for (byte index = 0; index < MaxChannelCount; index++) {
+      serial.print("channel<");serial.print(index);serial.print(">: ");serial.println(_channel_DataBitLength[ index ], DEC);
+    }
+  }
+private:
+  BetterImageStorageObjectBase baseIMGOBJ;
+  unsigned int _MaxHeight = MaxHeight;
+  unsigned int _MaxWidth = MaxWidth;
+  unsigned int _MaxPixelBitWidth = MaxPixelBitWidth;
+  unsigned int _MaxChannelCount = MaxChannelCount;
+  
+  BitLengthStorage ChannelBitLength;
+  BitOffsetStorage ChannelBitOffset;
+  uint8_t _channel_DataBitLength[ MaxChannelCount ];//sum of all values must be equal to "MaxPixelBitWidth"
+  uint8_t* _data;//Array
+  uint8_t _Data_PixelBitLength;//Max is 32
+  uint64_t _Data_ByteLength;//ArrayLength
+protected:
+  uint32_t width;
+  uint32_t height;
+};
 
-bool BetterImageStorageObject::begin(uint32_t w, uint32_t h, uint8_t inputValue0)
+
+
+
+
+
+
+
+
+
+
+bool BetterImageStorageObjectBase::begin(uint32_t w, uint32_t h, uint8_t inputValue0)
 {
   return begin_Base(w, h, inputValue0, 0, 0, 0);
 }
-bool BetterImageStorageObject::begin(uint32_t w, uint32_t h, uint8_t inputValue0, uint8_t inputValue1)
+bool BetterImageStorageObjectBase::begin(uint32_t w, uint32_t h, uint8_t inputValue0, uint8_t inputValue1)
 {
   return begin_Base(w, h, inputValue0, inputValue1, 0, 0);
 }
-bool BetterImageStorageObject::begin(uint32_t w, uint32_t h, uint8_t inputValue0, uint8_t inputValue1, uint8_t inputValue2)
+bool BetterImageStorageObjectBase::begin(uint32_t w, uint32_t h, uint8_t inputValue0, uint8_t inputValue1, uint8_t inputValue2)
 {
   return begin_Base(w, h, inputValue0, inputValue1, inputValue2, 0);
 }
-bool BetterImageStorageObject::begin(uint32_t w, uint32_t h, uint8_t inputValue0, uint8_t inputValue1, uint8_t inputValue2, uint8_t inputValue3)
+bool BetterImageStorageObjectBase::begin(uint32_t w, uint32_t h, uint8_t inputValue0, uint8_t inputValue1, uint8_t inputValue2, uint8_t inputValue3)
 {
   return begin_Base(w, h, inputValue0, inputValue1, inputValue2, inputValue3);
 }
 
-bool BetterImageStorageObject::begin_Base(uint32_t w, uint32_t h, uint8_t inputValue0, uint8_t inputValue1, uint8_t inputValue2, uint8_t inputValue3)
+bool BetterImageStorageObjectBase::begin_Base(uint32_t w, uint32_t h, uint8_t inputValue0, uint8_t inputValue1, uint8_t inputValue2, uint8_t inputValue3)
 {
   uint8_t redBitLength = 0;
   uint8_t greenBitLength = 0;
@@ -304,7 +357,7 @@ bool BetterImageStorageObject::begin_Base(uint32_t w, uint32_t h, uint8_t inputV
 }
 
 
-void BetterImageStorageObject::createImageFunc(uint32_t w, uint32_t h, uint8_t firstBitLength, uint8_t secondBitLength, uint8_t blueBitLength, uint8_t alphaBitLength)
+void BetterImageStorageObjectBase::createImageFunc(uint32_t w, uint32_t h, uint8_t firstBitLength, uint8_t secondBitLength, uint8_t blueBitLength, uint8_t alphaBitLength)
 {
   width = w;
   height = h;
@@ -357,7 +410,7 @@ void BetterImageStorageObject::createImageFunc(uint32_t w, uint32_t h, uint8_t f
 
 
 
-uint32_t BetterImageStorageObject::bitSelect_i32o32(uint32_t input, uint32_t offset, uint32_t length)
+uint32_t BetterImageStorageObjectBase::bitSelect_i32o32(uint32_t input, uint32_t offset, uint32_t length)
 {
   //offset = 4
   //length = 12
@@ -376,7 +429,7 @@ uint32_t BetterImageStorageObject::bitSelect_i32o32(uint32_t input, uint32_t off
   return (input>>shiftLeftCount) & bitSelectMask;
 }
 
-uint64_t BetterImageStorageObject::arraybitSelect_o64(uint8_t inputArray[], uint32_t bitIndex)
+uint64_t BetterImageStorageObjectBase::arraybitSelect_o64(uint8_t inputArray[], uint32_t bitIndex)
 {
   //bitIndex = 10
   //bitGrabCount = 64
@@ -405,7 +458,7 @@ uint64_t BetterImageStorageObject::arraybitSelect_o64(uint8_t inputArray[], uint
   return output;
 }
 
-uint32_t BetterImageStorageObject::arraybitSelect_o32(uint8_t inputArray[], uint32_t bitIndex)
+uint32_t BetterImageStorageObjectBase::arraybitSelect_o32(uint8_t inputArray[], uint32_t bitIndex)
 {
   //bitIndex = 10
   //bitGrabCount = 632
@@ -427,7 +480,7 @@ uint32_t BetterImageStorageObject::arraybitSelect_o32(uint8_t inputArray[], uint
   return output;
 }
 
-void BetterImageStorageObject::uint32_convert_to_4xuint8Array(uint8_t inputArray[], uint32_t input)
+void BetterImageStorageObjectBase::uint32_convert_to_4xuint8Array(uint8_t inputArray[], uint32_t input)
 {
   //inputArray must be atleast 4 items
   inputArray[0] = (uint8_t)(input>>(24));
@@ -437,7 +490,7 @@ void BetterImageStorageObject::uint32_convert_to_4xuint8Array(uint8_t inputArray
 }
 
 
-void BetterImageStorageObject::byteArray_bitWrite_i32(uint8_t inputArray[], uint32_t input, uint64_t bitoffset, uint8_t inputbitlength)
+void BetterImageStorageObjectBase::byteArray_bitWrite_i32(uint8_t inputArray[], uint32_t input, uint64_t bitoffset, uint8_t inputbitlength)
 {
   printf("inputbitlength %d\n", inputbitlength);
   uint32_t byteIndex = ((bitoffset-(bitoffset%8))>>3);
@@ -504,21 +557,21 @@ void BetterImageStorageObject::byteArray_bitWrite_i32(uint8_t inputArray[], uint
 }
 
 
-uint16_t BetterImageStorageObject::getWidth()
+uint16_t BetterImageStorageObjectBase::getWidth()
 {
   return width;
 }
-uint16_t BetterImageStorageObject::getHeight()
+uint16_t BetterImageStorageObjectBase::getHeight()
 {
   return height;
 }
-uint32_t BetterImageStorageObject::getPixelCount()
+uint32_t BetterImageStorageObjectBase::getPixelCount()
 {
   return (width * height);
 }
 
 
-PixelStruct BetterImageStorageObject::getPixelValue(uint32_t xPos, uint32_t yPos)
+PixelStruct BetterImageStorageObjectBase::getPixelValue(uint32_t xPos, uint32_t yPos)
 {
   PixelStruct pixel;
   uint32_t pixelBitindex = (xPos + yPos*width)*(_Data_PixelBitLength);
@@ -532,7 +585,7 @@ PixelStruct BetterImageStorageObject::getPixelValue(uint32_t xPos, uint32_t yPos
   return pixel;
 }
 
-void BetterImageStorageObject::setPixelValue(uint32_t xPos, uint32_t yPos, PixelStruct pixel)
+void BetterImageStorageObjectBase::setPixelValue(uint32_t xPos, uint32_t yPos, PixelStruct pixel)
 {
   printf(" set pixel value %0d,%0d,%0d,%0d \n", pixel.red, pixel.green, pixel.blue, pixel.alpha);
   uint64_t pixelBitindex = (xPos + yPos*width)*(_Data_PixelBitLength);
@@ -549,7 +602,7 @@ void BetterImageStorageObject::setPixelValue(uint32_t xPos, uint32_t yPos, Pixel
 
 
 
-PixelStruct BetterImageStorageObject::filterPixelValues(PixelStruct pixelIn, uint8_t rBitLength, uint8_t gBitLength, uint8_t bBitLength, uint8_t aBitLength)
+PixelStruct BetterImageStorageObjectBase::filterPixelValues(PixelStruct pixelIn, uint8_t rBitLength, uint8_t gBitLength, uint8_t bBitLength, uint8_t aBitLength)
 {
   PixelStruct pixelOut;
   printf("filter in %0d,%0d,%0d,%0d \n", pixelIn.red, pixelIn.green, pixelIn.blue, pixelIn.alpha);
@@ -572,7 +625,7 @@ PixelStruct BetterImageStorageObject::filterPixelValues(PixelStruct pixelIn, uin
 }
 
 
-PixelStruct BetterImageStorageObject::applyPixelMask(PixelStruct pixelIn)
+PixelStruct BetterImageStorageObjectBase::applyPixelMask(PixelStruct pixelIn)
 {
   pixelIn.red &= PixelMask.redMask;
   pixelIn.green &= PixelMask.greenMask;
@@ -582,7 +635,7 @@ PixelStruct BetterImageStorageObject::applyPixelMask(PixelStruct pixelIn)
 }
 
 
-uint32_t BetterImageStorageObject::ConvertPixelStruct_to_Binary(PixelStruct pixel)
+uint32_t BetterImageStorageObjectBase::ConvertPixelStruct_to_Binary(PixelStruct pixel)
 {
   printf("%0d,%0d,%0d,%0d \n", pixel.red, pixel.green, pixel.blue, pixel.alpha);
   uint32_t pixelBinaryOut = 0B00000000000000000000000000000000;
@@ -608,7 +661,7 @@ uint32_t BetterImageStorageObject::ConvertPixelStruct_to_Binary(PixelStruct pixe
 
 
 
-void BetterImageStorageObject::setPixelMask( PixelMaskStruct *MaskStruct )
+void BetterImageStorageObjectBase::setPixelMask( PixelMaskStruct *MaskStruct )
 {
   MaskStruct->redMask = ~(0B11111111 << ChannelBitLength.get_redChannel());
   MaskStruct->greenMask = ~(0B11111111 << ChannelBitLength.get_greenChannel());
@@ -616,7 +669,7 @@ void BetterImageStorageObject::setPixelMask( PixelMaskStruct *MaskStruct )
   MaskStruct->alphaMask = ~(0B11111111 << ChannelBitLength.get_alphaChannel());
 }
 
-uint8_t BetterImageStorageObject::mean3input8Bit(uint8_t i0, uint8_t i1, uint8_t i2)
+uint8_t BetterImageStorageObjectBase::mean3input8Bit(uint8_t i0, uint8_t i1, uint8_t i2)
 {
   uint32_t sum = (i0+i1+i2);
   return (unsigned char)((sum)<<3);
