@@ -130,7 +130,7 @@ class BetterImageStorageObjectBase{
     PixelStruct getPixelValue(uint32_t xPos, uint32_t yPos);
     void setPixelValue(uint32_t xPos, uint32_t yPos, PixelStruct pixel);
     
-  private:
+  public://private:
     void createImageFunc(uint32_t w, uint32_t h, uint8_t redChannelBitLength, uint8_t greenBitLength, uint8_t blueBitLength, uint8_t alphaBitLength);
     uint32_t bitSelect_i32o32(uint32_t input, uint32_t offset, uint32_t length);
     
@@ -192,7 +192,7 @@ BetterImageStorageObject::BetterImageStorageObject(bool grayscaleFlag, bool alph
 #include <stdio.h>
 
 template< unsigned int MaxWidth, unsigned int MaxHeight, unsigned int MaxPixelBitWidth, unsigned int MaxChannelCount >
-class BetterImageStorageObjectTemplate : public BetterImageStorageObjectBase{
+class BetterImageStorageObjectTemplate{
 public:
   bool configChannelBitSize(int num, ...) {
     int valu = num;
@@ -233,16 +233,34 @@ public:
     }
     return true;
   }
-  uint16_t getWidth(){return MaxWidth;}
-  uint16_t getHeight(){return MaxHeight;}
-  uint32_t getPixelCount(){return (MaxWidth * MaxHeight);}
+  uint16_t getWidth(){return width;}
+  uint16_t getHeight(){return height;}
+  uint32_t getPixelCount(){return (width * height);}
   void printChannelBitLengths(Stream &serial){
     for (byte index = 0; index < MaxChannelCount; index++) {
       serial.print("channel<");serial.print(index);serial.print(">: ");serial.println(_channel_DataBitLength[ index ], DEC);
     }
   }
+  PixelStruct getPixelValue(uint32_t xPos, uint32_t yPos)
+  {
+    PixelStruct pixel;
+    
+    return pixel;
+  }
+  void setPixelValue(uint32_t xPos, uint32_t yPos, PixelStruct pixel)
+  {
+    printf(" set pixel value %0d,%0d,%0d,%0d \n", pixel.red, pixel.green, pixel.blue, pixel.alpha);
+    uint64_t pixelBitindex = (xPos + yPos*width)*(_Data_PixelBitLength);
+    uint32_t pixelValue = baseIMGOBJ.ConvertPixelStruct_to_Binary( pixel );
+    std::bitset<32> z(pixelValue);
+    std::cout << "set " << z << '\n';
+    //make me work
+    baseIMGOBJ.byteArray_bitWrite_i32(_data, pixelValue, pixelBitindex, _Data_PixelBitLength);
+  }
 private:
   BetterImageStorageObjectBase baseIMGOBJ;
+  uint32_t width = MaxWidth;
+  uint32_t height = MaxHeight;
   unsigned int _MaxPixelBitWidth = MaxPixelBitWidth;
   unsigned int _MaxChannelCount = MaxChannelCount;
   

@@ -88,7 +88,8 @@ void loop()
   }
   Serial.print("imageV2 Usage Pass:");
   Serial.println(imageV2Status);
-
+  delay(5000);
+  
   /*
   for (int indexY = 0; indexY < imageV1.getHeight(); indexY++){
     for (int indexX = 0; indexX < imageV1.getWidth(); indexX++){
