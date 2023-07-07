@@ -48,6 +48,13 @@ void loop()
   
   for (int indexY = 0; indexY < imageV2.getHeight(); indexY++){
     for (int indexX = 0; indexX < imageV2.getWidth(); indexX++){
+      /*
+      Serial.println("Set imageV2 -> ");
+      Serial.print("indexX:");Serial.print(indexX);
+      Serial.println();
+      Serial.print("indexY:");Serial.print(indexY);
+      Serial.println();
+      */
       imageV2.setPixelValue(indexX, indexY, pixelArray[ indexY*64 + indexX ]);
     }
   }
@@ -71,7 +78,7 @@ void loop()
         imageV2Status = false;
       }
       
-      Serial.println("imageV2 -> ");
+      Serial.println("Get imageV2 -> ");
       Serial.print("indexX:");Serial.print(indexX);
       Serial.println();
       Serial.print("indexY:");Serial.print(indexY);
