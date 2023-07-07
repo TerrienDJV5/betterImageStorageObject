@@ -1,7 +1,7 @@
 #include "BetterImageStorageObject.hpp"
 
 BetterImageStorageObject imageV1(true, false);
-BetterImageStorageObjectTemplate<128, 128, 32, 4> imageV2;
+BetterImageStorageObjectTemplate<64, 64, 32, 4> imageV2;
 
 
 int freeRam () {
@@ -11,7 +11,7 @@ int freeRam () {
 };
 
 
-PixelStruct pixelArray[128*128];
+PixelStruct pixelArray[64*64];
 
 void setup()
 {
@@ -26,39 +26,51 @@ void setup()
   //Serial Usage Diff After Serial Addition
   //328//0
   Serial.begin(115200);
-  imageV1.begin(128,128,8);
+  //imageV1.begin(64,64,8);
   imageV2.configChannelBitSize(5,6,5,1);
   imageV2.printChannelBitLengths(Serial);
-  delay(10000);
+  delay(500);
 }
 
 void loop()
 {
-  PixelStruct pixelOUT;
+  for (int indexY = 0; indexY < 64; indexY++){
+    for (int indexX = 0; indexX < 64; indexX++){
+      unsigned char pRed = random(pow(2, 5));
+      unsigned char pGreen = random(pow(2, 6));
+      unsigned char pBlue = random(pow(2, 5));
+      unsigned char pAlpha = random(pow(2, 1));
+      pixelArray[ indexY*64 + indexX ] = {pRed, pGreen, pBlue, pAlpha};
+    }
+  }
+  Serial.println(imageV2.getWidth());
+  Serial.println(imageV2.getHeight());
   
-  for (int indexY; indexY < 128; indexY++){
-    for (int indexX; indexX < 128; indexX++){
-      unsigned char pRed = random(255);
-      unsigned char pGreen = random(255);
-      unsigned char pBlue = random(255);
-      unsigned char pAlpha = random(255);
-      pixelArray[ indexY*128 + indexX ] = {pRed, pGreen, pBlue, pAlpha};
+  for (int indexY = 0; indexY < imageV2.getHeight(); indexY++){
+    for (int indexX = 0; indexX < imageV2.getWidth(); indexX++){
+      imageV2.setPixelValue(indexX, indexY, pixelArray[ indexY*64 + indexX ]);
     }
   }
   
-  for (int indexY; indexY < imageV2.getHeight(); indexY++){
-    for (int indexX; indexX < imageV2.getWidth(); indexX++){
-      unsigned char pRed = random(255);
-      unsigned char pGreen = random(255);
-      unsigned char pBlue = random(255);
-      unsigned char pAlpha = random(255);
-      PixelStruct pixelIN = {pRed, pGreen, pBlue, pAlpha};
-      imageV2.setPixelValue(indexX, indexY, pixelIN);
-    }
-  }
-  for (int indexY; indexY < imageV2.getHeight(); indexY++){
-    for (int indexX; indexX < imageV2.getWidth(); indexX++){
-      pixelOUT = imageV2.getPixelValue(indexX, indexY);
+  bool imageV2Status = true;
+  
+  for (int indexY = 0; indexY < imageV2.getHeight(); indexY++){
+    for (int indexX = 0; indexX < imageV2.getWidth(); indexX++){
+      PixelStruct pixelOUT = imageV2.getPixelValue(indexX, indexY);
+      
+      if (pixelOUT.red != pixelArray[ indexY*64 + indexX ].red ){
+        imageV2Status = false;
+      }
+      if (pixelOUT.green != pixelArray[ indexY*64 + indexX ].green ){
+        imageV2Status = false;
+      }
+      if (pixelOUT.blue != pixelArray[ indexY*64 + indexX ].blue ){
+        imageV2Status = false;
+      }
+      if (pixelOUT.alpha != pixelArray[ indexY*64 + indexX ].alpha ){
+        imageV2Status = false;
+      }
+      
       Serial.println("imageV2 -> ");
       Serial.print("indexX:");Serial.print(indexX);
       Serial.println();
@@ -68,11 +80,18 @@ void loop()
       Serial.println(pixelOUT.green);
       Serial.println(pixelOUT.blue);
       Serial.println(pixelOUT.alpha);
+      Serial.println(pixelArray[ indexY*64 + indexX ].red);
+      Serial.println(pixelArray[ indexY*64 + indexX ].green);
+      Serial.println(pixelArray[ indexY*64 + indexX ].blue);
+      Serial.println(pixelArray[ indexY*64 + indexX ].alpha);
     }
   }
-  
-  for (int indexY; indexY < imageV1.getHeight(); indexY++){
-    for (int indexX; indexX < imageV1.getWidth(); indexX++){
+  Serial.print("imageV2 Usage Pass:");
+  Serial.println(imageV2Status);
+
+  /*
+  for (int indexY = 0; indexY < imageV1.getHeight(); indexY++){
+    for (int indexX = 0; indexX < imageV1.getWidth(); indexX++){
       unsigned char pRed = random(255);
       unsigned char pGreen = random(255);
       unsigned char pBlue = random(255);
@@ -81,9 +100,9 @@ void loop()
       imageV1.setPixelValue(indexX, indexY, pixelIN);
     }
   }
-  for (int indexY; indexY < imageV1.getHeight(); indexY++){
-    for (int indexX; indexX < imageV1.getWidth(); indexX++){
-      pixelOUT = imageV1.getPixelValue(indexX, indexY);
+  for (int indexY = 0; indexY < imageV1.getHeight(); indexY++){
+    for (int indexX = 0; indexX < imageV1.getWidth(); indexX++){
+      PixelStruct pixelOUT = imageV1.getPixelValue(indexX, indexY);
       Serial.println("imageV1 -> ");
       Serial.print("indexX:");Serial.print(indexX);
       Serial.println();
@@ -95,4 +114,5 @@ void loop()
       Serial.println(pixelOUT.alpha);
     }
   }
+  //*/
 }

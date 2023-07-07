@@ -103,7 +103,7 @@ class BitOffsetStorage : public RGBAChannelDataStorage{
 
 
 
-
+//fix Shit Make this Work and Clean up Code!
 
 class BetterImageStorageObjectBase{
   public:
@@ -191,7 +191,7 @@ BetterImageStorageObject::BetterImageStorageObject(bool grayscaleFlag, bool alph
 
 #include <stdio.h>
 
-template< unsigned int MaxHeight, unsigned int MaxWidth, unsigned int MaxPixelBitWidth, unsigned int MaxChannelCount >
+template< unsigned int MaxWidth, unsigned int MaxHeight, unsigned int MaxPixelBitWidth, unsigned int MaxChannelCount >
 class BetterImageStorageObjectTemplate : public BetterImageStorageObjectBase{
 public:
   bool configChannelBitSize(int num, ...) {
@@ -233,9 +233,9 @@ public:
     }
     return true;
   }
-  uint16_t getWidth(){return width;}
-  uint16_t getHeight(){return height;}
-  uint32_t getPixelCount(){return (width * height);}
+  uint16_t getWidth(){return MaxWidth;}
+  uint16_t getHeight(){return MaxHeight;}
+  uint32_t getPixelCount(){return (MaxWidth * MaxHeight);}
   void printChannelBitLengths(Stream &serial){
     for (byte index = 0; index < MaxChannelCount; index++) {
       serial.print("channel<");serial.print(index);serial.print(">: ");serial.println(_channel_DataBitLength[ index ], DEC);
@@ -243,20 +243,15 @@ public:
   }
 private:
   BetterImageStorageObjectBase baseIMGOBJ;
-  unsigned int _MaxHeight = MaxHeight;
-  unsigned int _MaxWidth = MaxWidth;
   unsigned int _MaxPixelBitWidth = MaxPixelBitWidth;
   unsigned int _MaxChannelCount = MaxChannelCount;
   
   BitLengthStorage ChannelBitLength;
   BitOffsetStorage ChannelBitOffset;
   uint8_t _channel_DataBitLength[ MaxChannelCount ];//sum of all values must be equal to "MaxPixelBitWidth"
-  uint8_t* _data;//Array
+  uint8_t _data[ (int)((MaxWidth * MaxHeight * MaxPixelBitWidth)/8)+1 ];//Array
   uint8_t _Data_PixelBitLength;//Max is 32
   uint64_t _Data_ByteLength;//ArrayLength
-protected:
-  uint32_t width;
-  uint32_t height;
 };
 
 
