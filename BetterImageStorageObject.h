@@ -1,16 +1,17 @@
 //By Terrien-DJV5
-//BetterImageStorageObject.h
+//BetterImageStorageObject.hpp
 //Date Created: jun 29 2023 6:48PM
+
+//https://cplusplus.com/reference/
 
 
 #ifndef MY_BETTERIMAGESTORAGEOBJECT_H
 #define MY_BETTERIMAGESTORAGEOBJECT_H
-#include <cstdint>
-#include <cinttypes>
+#include <stdint.h>
+#include <inttypes.h>
 #include <stdlib.h>
 
 
-#include <cstdint>
 
 #define BImgSObj_IFlag_Grayscale 0B01000000
 #define BImgSObj_IFlag_AlphaChannel 0B10000000
@@ -40,16 +41,9 @@ typedef struct {
   uint8_t alpha;
 } PixelStruct;
 
-class BetterImageStorageObject {
-  public:
-    
-    //how/where image is stored im memory
-    typedef struct {
-      unsigned char* data;//Array
-      uint8_t pixelBitLength;//Max is 32
-      uint64_t dataByteLength;//ArrayLength
-      
-    } PixelArrayStruct;
+
+class BetterImageStorageObject
+{
   private:
     typedef struct {
       uint16_t channelDataValues;
@@ -84,7 +78,7 @@ class BetterImageStorageObject {
       virtual void set_alphaChannel(uint8_t inputValue);
     } ChannelDataStorageStruct;
 
-    typedef struct : ChannelDataStorageStruct{
+    typedef struct ChannelDataStorageStruct : ChannelDataStorageStruct{
       uint8_t get_redChannel(){return get_Channel(0, 3);};
       uint8_t get_greenChannel(){return get_Channel(3, 3);};
       uint8_t get_blueChannel(){return get_Channel(6, 3);};
@@ -98,7 +92,7 @@ class BetterImageStorageObject {
       void set_extraNibbleValue(uint8_t inputValue){set_Channel(inputValue, 12, 4);};
     } ChannelBitLengthStorageStruct;
     
-    typedef struct : ChannelDataStorageStruct{
+    typedef struct ChannelDataStorageStruct : ChannelDataStorageStruct{
       uint8_t get_redChannel(){return get_Channel(0, 1);};//red offset is always 0
       uint8_t get_greenChannel(){return get_Channel(1, 5);};//max value = 31, min value = 0
       uint8_t get_blueChannel(){return get_Channel(6, 5);};//max value = 31, min value = 0
@@ -110,14 +104,21 @@ class BetterImageStorageObject {
       void set_alphaChannel(uint8_t inputValue){set_Channel(inputValue, 11, 5);};//max value = 31, min value = 0
     } ChannelBitOffsetStorageStruct;
     
-    
     typedef struct {
       uint8_t redMask;
       uint8_t greenMask;
       uint8_t blueMask;
       uint8_t alphaMask;
     } PixelMaskStruct;
-    void setPixelMask(PixelMaskStruct *pixelMaskInput);
+    void setPixelMask(PixelMaskStruct *pixelMaskInput); 
+  public:
+    //how/where image is stored im memory
+    typedef struct {
+      unsigned char* data;//Array
+      uint8_t pixelBitLength;//Max is 32
+      uint64_t dataByteLength;//ArrayLength
+      
+    } PixelArrayStruct;
   public:
     BetterImageStorageObject( bool grayscaleFlag, bool alphaChannelFlag );
     //imageStartModeType imagemode = grayscale|alphaChannel;
