@@ -1,3 +1,4 @@
+/*
 #include <iostream>
 #include <stdint.h>
 #include <inttypes.h>
@@ -17,13 +18,13 @@ BetterImageStorageObject image(false, true);
 
 
 int main() {
-  /* initialize random seed: */
+  // initialize random seed:
   srand (time(NULL));
   
   image.begin(2,2,5,6,5,1);
   for (int indexY = 0; indexY < image.getHeight(); indexY++){
     for (int indexX = 0; indexX < image.getWidth(); indexX++){
-      /* generate secret number between 0 and 255: */
+      // generate secret number between 0 and 255:
       unsigned char pRed = rand() % 256 + 0;
       unsigned char pGreen = rand() % 256 + 0;
       unsigned char pBlue = rand() % 256 + 0;
@@ -36,16 +37,9 @@ int main() {
       printf("out    {%0d,%0d,%0d,%0d},\n", pixel2.red, pixel2.green, pixel2.blue, pixel2.alpha);
     }
   }
-  /*
-  for (int indexY = 0; indexY < image.getHeight(); indexY++){
-  for (int indexX = 0; indexX < image.getWidth(); indexX++){
-  PixelStruct pixel = image.getPixelValue(indexX, indexY);
-  printf("{%0d,%0d,%0d,%0d},", pixel.red, pixel.green, pixel.blue, pixel.alpha);
-  }
-  std::cout << "\n";
-  }
-  */
   
     
   return 0;
 }
+
+//*/
